@@ -12,6 +12,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+const buffer_1 = __importDefault(require("buffer"));
+if (!buffer_1.default.SlowBuffer) {
+    buffer_1.default.SlowBuffer = buffer_1.default.Buffer;
+}
 const app_1 = __importDefault(require("./app"));
 const config_1 = __importDefault(require("./config"));
 function bootstrap() {

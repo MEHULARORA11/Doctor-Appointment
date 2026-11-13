@@ -233,10 +233,16 @@ const getAppointment = (id) => __awaiter(void 0, void 0, void 0, function* () {
     return result;
 });
 const getAppointmentByTrackingId = (data) => __awaiter(void 0, void 0, void 0, function* () {
-    const { id } = data;
-    const result = yield prisma_1.default.appointments.findUnique({
+    const trackingId = (data.trackingId || data.id || '').trim();
+    if (!trackingId) {
+        throw new apiError_1.default(400, "Tracking ID is required !!");
+    }
+    const result = yield prisma_1.default.appointments.findFirst({
         where: {
-            trackingId: id
+            OR: [
+                { trackingId: { equals: trackingId, mode: 'insensitive' } },
+                { id: trackingId }
+            ]
         },
         include: {
             doctor: {

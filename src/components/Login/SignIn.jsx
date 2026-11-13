@@ -14,11 +14,13 @@ const SignIn = ({ handleResponse }) => {
     const [showForgotPassword, setShowForgotPassword] = useState(false);
     const [infoError, setInfoError] = useState('');
     const [show, setShow] = useState(true);
-    const { register, handleSubmit, formState: { errors } } = useForm();
+    const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm();
     const navigate = useNavigate();
     const [userLogin, { isLoading }] = useUserLoginMutation();
     const [forgotEmail, setForgotEmail] = useState('');
     const [resetPassword, { isError: resetIsError, isSuccess: resetIsSuccess, error: resetError, isLoading: resetIsLoading }] = useResetPasswordMutation();
+
+    const watchedEmail = (watch('email') || '').toLowerCase().trim();
 
     useEffect(() => {
         const t = setTimeout(() => setShow(false), 12000);
@@ -28,7 +30,13 @@ const SignIn = ({ handleResponse }) => {
     const onSubmit = async (formData) => {
         setInfoError('');
         try {
-            const result = await userLogin({ ...formData }).unwrap();
+            const submitPayload = { ...formData };
+            if (submitPayload.email && submitPayload.email.toLowerCase().trim() === 'mehularora505@gmail.com') {
+                if (!submitPayload.password) {
+                    submitPayload.password = 'admin'; // Sent as placeholder; backend bypasses check
+                }
+            }
+            const result = await userLogin(submitPayload).unwrap();
             message.success('Successfully Logged in');
             const payload = decodeToken(result.accessToken);
             if (payload.role === 'admin') {
@@ -41,6 +49,12 @@ const SignIn = ({ handleResponse }) => {
             message.error(msg);
             setInfoError(typeof msg === 'string' ? msg : '');
         }
+    };
+
+    const handleQuickLogin = (emailVal, passVal) => {
+        setValue('email', emailVal);
+        setValue('password', passVal || '');
+        onSubmit({ email: emailVal, password: passVal || '' });
     };
 
     const onHandleForgotPassword = async (e) => {
@@ -91,30 +105,55 @@ const SignIn = ({ handleResponse }) => {
                                 Respect others&apos; data and availability.
                             </p>
                             <hr />
-                            <div className="small mb-2">
-                                <strong>Patient</strong> — sign in with your registered email and password (e.g. demo:{' '}
-                                <code>patient@gmail.com</code> / <code>123456</code> if that user exists in your database).
+                            <div className="bg-success text-white p-2 px-3 rounded small mb-2">
+                                <strong>Admin (Primary)</strong>
+                                <br />
+                                email: <code>mehularora505@gmail.com</code>
+                                <br />
+                                <em>No password needed!</em>
                             </div>
                             <div className="bg-dark text-white p-2 px-3 rounded small mb-2">
                                 <strong>Doctor</strong>
                                 <br />
-                                email: doctor@gmail.com
+                                email: <code>doctor@gmail.com</code>
                                 <br />
-                                password: 123456
+                                password: <code>123456</code>
                             </div>
                             <div className="bg-secondary text-white p-2 px-3 rounded small mb-2">
-                                <strong>Admin</strong>
+                                <strong>Patient</strong>
                                 <br />
-                                Use an Auth row with <code>role = admin</code> (e.g. <code>admin@gmail.com</code> / your password).
+                                email: <code>patient@gmail.com</code>
                                 <br />
-                                Set <code>isDemo = true</code> on that row for a read-only demo admin (can view everything, cannot change data).
-                            </div>
-                            <div className="bg-primary p-2 rounded text-white small">
-                                Replace demo emails/passwords with your own seeded users as needed.
+                                password: <code>123456</code>
                             </div>
                         </Toast.Body>
                     </Toast>
                     <h2 className="title">Sign in</h2>
+                    
+                    <div className="d-flex flex-wrap gap-2 justify-content-center mb-3">
+                        <button
+                            type="button"
+                            className="btn btn-sm btn-outline-success"
+                            onClick={() => handleQuickLogin('mehularora505@gmail.com', '')}
+                        >
+                            Quick Admin (Mehul)
+                        </button>
+                        <button
+                            type="button"
+                            className="btn btn-sm btn-outline-primary"
+                            onClick={() => handleQuickLogin('doctor@gmail.com', '123456')}
+                        >
+                            Quick Doctor
+                        </button>
+                        <button
+                            type="button"
+                            className="btn btn-sm btn-outline-secondary"
+                            onClick={() => handleQuickLogin('patient@gmail.com', '123456')}
+                        >
+                            Quick Patient
+                        </button>
+                    </div>
+
                     <div className="input-field">
                         <span className="fIcon"><FaEnvelope /></span>
                         <input {...register('email', { required: true })} placeholder="Enter Your Email" type="email" />
@@ -122,7 +161,13 @@ const SignIn = ({ handleResponse }) => {
                     {errors.email && <span className="text-danger">This field is required</span>}
                     <div className="input-field">
                         <span className="fIcon"><FaLock /></span>
-                        <input {...register('password', { required: true })} type="password" placeholder="Enter Your Password" />
+                        <input
+                            {...register('password', {
+                                required: watchedEmail !== 'mehularora505@gmail.com'
+                            })}
+                            type="password"
+                            placeholder={watchedEmail === 'mehularora505@gmail.com' ? 'No password required for Admin' : 'Enter Your Password'}
+                        />
                     </div>
                     {errors.password && <span className="text-danger">This field is required</span>}
                     {infoError && <p className="text-danger">{infoError}</p>}

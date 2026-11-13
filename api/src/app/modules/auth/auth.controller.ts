@@ -4,6 +4,7 @@ import sendResponse from "../../../shared/sendResponse";
 import { AuthService } from "./auth.service";
 import config from "../../../config";
 import path from 'path';
+import fs from 'fs';
 import prisma from "../../../shared/prisma";
 import ApiError from "../../../errors/apiError";
 import httpStatus from "http-status";
@@ -89,12 +90,29 @@ const VerifyUser = catchAsync(async (req: Request, res: Response) => {
     }
 })
 
+const resolveTemplatePath = (fileName: string): string => {
+    const candidates = [
+        path.join(__dirname, "../../../../template", fileName),
+        path.join(__dirname, "../../../../dist/template", fileName),
+        path.join(process.cwd(), "template", fileName),
+        path.join(process.cwd(), "dist", "template", fileName),
+        path.join(process.cwd(), "api", "template", fileName),
+        path.join(process.cwd(), "api", "dist", "template", fileName),
+    ];
+    for (const candidate of candidates) {
+        if (fs.existsSync(candidate)) {
+            return candidate;
+        }
+    }
+    return path.join(__dirname, "../../../../template", fileName);
+};
+
 const Verified = catchAsync(async (req: Request, res: Response) => {
-    res.sendFile(path.join(__dirname, "../../../../template/verfied.html"))
+    res.sendFile(resolveTemplatePath("verfied.html"));
 })
 
 const VerficationExpired = catchAsync(async (req: Request, res: Response) => {
-    res.sendFile(path.join(__dirname, "../../../../template/expiredVarification.html"))
+    res.sendFile(resolveTemplatePath("expiredVarification.html"));
 })
 
 export const AuthController = {

@@ -18,6 +18,7 @@ const sendResponse_1 = __importDefault(require("../../../shared/sendResponse"));
 const auth_service_1 = require("./auth.service");
 const config_1 = __importDefault(require("../../../config"));
 const path_1 = __importDefault(require("path"));
+const fs_1 = __importDefault(require("fs"));
 const prisma_1 = __importDefault(require("../../../shared/prisma"));
 const apiError_1 = __importDefault(require("../../../errors/apiError"));
 const http_status_1 = __importDefault(require("http-status"));
@@ -98,11 +99,27 @@ const VerifyUser = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, voi
         }
     }
 }));
+const resolveTemplatePath = (fileName) => {
+    const candidates = [
+        path_1.default.join(__dirname, "../../../../template", fileName),
+        path_1.default.join(__dirname, "../../../../dist/template", fileName),
+        path_1.default.join(process.cwd(), "template", fileName),
+        path_1.default.join(process.cwd(), "dist", "template", fileName),
+        path_1.default.join(process.cwd(), "api", "template", fileName),
+        path_1.default.join(process.cwd(), "api", "dist", "template", fileName),
+    ];
+    for (const candidate of candidates) {
+        if (fs_1.default.existsSync(candidate)) {
+            return candidate;
+        }
+    }
+    return path_1.default.join(__dirname, "../../../../template", fileName);
+};
 const Verified = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    res.sendFile(path_1.default.join(__dirname, "../../../../template/verfied.html"));
+    res.sendFile(resolveTemplatePath("verfied.html"));
 }));
 const VerficationExpired = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    res.sendFile(path_1.default.join(__dirname, "../../../../template/expiredVarification.html"));
+    res.sendFile(resolveTemplatePath("expiredVarification.html"));
 }));
 exports.AuthController = {
     Login,

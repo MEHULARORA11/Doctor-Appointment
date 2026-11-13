@@ -15,6 +15,7 @@
     "axios": "^1.7.9",
     "bootstrap": "^5.3.3",
     "browser-image-compression": "^2.0.2",
+    "concurrently": "^10.0.7",
     "dayjs": "^1.11.13",
     "dotenv": "^16.4.5",
     "jwt-decode": "^4.0.0",
@@ -39,7 +40,9 @@
     "web-vitals": "^1.1.0"
   },
   "scripts": {
-    "start": "react-scripts start",
+    "start": "concurrently -n \"SERVER,CLIENT\" -c \"cyan,magenta\" \"npm --prefix api start\" \"react-scripts start\"",
+    "start:client": "react-scripts start",
+    "start:server": "npm --prefix api start",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
@@ -69,5 +72,8 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "prisma": "8.0.0-rc.33"
   }
 }

@@ -201,11 +201,18 @@ const getAppointment = async (id: string): Promise<Appointments | null> => {
 }
 
 const getAppointmentByTrackingId = async (data: any): Promise<Appointments | null> => {
-    const { id } = data;
+    const trackingId = (data.trackingId || data.id || '').trim();
 
-    const result = await prisma.appointments.findUnique({
+    if (!trackingId) {
+        throw new ApiError(400, "Tracking ID is required !!");
+    }
+
+    const result = await prisma.appointments.findFirst({
         where: {
-            trackingId: id
+            OR: [
+                { trackingId: { equals: trackingId, mode: 'insensitive' } },
+                { id: trackingId }
+            ]
         },
         include: {
             doctor: {

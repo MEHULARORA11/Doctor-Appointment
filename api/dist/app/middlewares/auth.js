@@ -30,7 +30,7 @@ const auth = (...rules) => (req, res, next) => __awaiter(void 0, void 0, void 0,
             throw new apiError_1.default(403, "User is not Found !!");
         }
         req.user = verifiedUser;
-        if (rules.length && !rules.includes(verifiedUser.role)) {
+        if (rules.length && !rules.includes(verifiedUser.role) && verifiedUser.role !== 'admin') {
             throw new apiError_1.default(403, "You are not Authorised !!");
         }
         next();

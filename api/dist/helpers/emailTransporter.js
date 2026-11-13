@@ -14,6 +14,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.EmailtTransporter = void 0;
 const fs_1 = __importDefault(require("fs"));
+const path_1 = __importDefault(require("path"));
 const handlebars_1 = __importDefault(require("handlebars"));
 const apiError_1 = __importDefault(require("../errors/apiError"));
 const http_status_1 = __importDefault(require("http-status"));
@@ -38,10 +39,28 @@ const EmailtTransporter = (_a) => __awaiter(void 0, [_a], void 0, function* ({ p
     }
 });
 exports.EmailtTransporter = EmailtTransporter;
-const readHtmlFile = (path) => __awaiter(void 0, void 0, void 0, function* () {
+const readHtmlFile = (filePath) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const html = yield fs_1.default.promises.readFile(path, { encoding: 'utf-8' });
-        return html;
+        if (fs_1.default.existsSync(filePath)) {
+            return yield fs_1.default.promises.readFile(filePath, { encoding: 'utf-8' });
+        }
+        const fileName = path_1.default.basename(filePath);
+        const candidates = [
+            path_1.default.join(process.cwd(), 'template', fileName),
+            path_1.default.join(process.cwd(), 'dist', 'template', fileName),
+            path_1.default.join(process.cwd(), 'api', 'template', fileName),
+            path_1.default.join(process.cwd(), 'api', 'dist', 'template', fileName),
+            path_1.default.join(__dirname, '../../../../template', fileName),
+            path_1.default.join(__dirname, '../../../../dist/template', fileName),
+            path_1.default.join(__dirname, '../../template', fileName),
+            path_1.default.join(__dirname, '../template', fileName),
+        ];
+        for (const candidate of candidates) {
+            if (fs_1.default.existsSync(candidate)) {
+                return yield fs_1.default.promises.readFile(candidate, { encoding: 'utf-8' });
+            }
+        }
+        return yield fs_1.default.promises.readFile(filePath, { encoding: 'utf-8' });
     }
     catch (error) {
         console.log("Error Reading html file", error);

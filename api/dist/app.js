@@ -3,6 +3,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+const buffer_1 = __importDefault(require("buffer"));
+if (!buffer_1.default.SlowBuffer) {
+    buffer_1.default.SlowBuffer = buffer_1.default.Buffer;
+}
 const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
 const cookie_parser_1 = __importDefault(require("cookie-parser"));
@@ -19,8 +23,21 @@ app.use(express_1.default.static('public'));
 app.get('/favicon.ico', (req, res) => {
     res.status(204).end();
 });
+app.get('/health', (req, res) => {
+    res.status(200).json({
+        status: 'success',
+        message: 'Doctor Appointment API is healthy and running',
+        environment: config_1.default.env,
+        timestamp: new Date().toISOString()
+    });
+});
 app.get('/', (req, res) => {
-    res.send(config_1.default.clientUrl);
+    res.json({
+        status: 'success',
+        message: 'Doctor Appointment API is online',
+        clientUrl: config_1.default.clientUrl,
+        documentation: '/api/v1'
+    });
 });
 app.use('/api/v1', routes_1.default);
 app.use((err, req, res, next) => {

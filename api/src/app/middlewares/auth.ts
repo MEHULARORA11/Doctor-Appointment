@@ -18,7 +18,7 @@ export const auth = (...rules: string[]) => async (req: Request, res: Response, 
         }
         req.user = verifiedUser;
 
-        if (rules.length && !rules.includes(verifiedUser.role)) {
+        if (rules.length && !rules.includes(verifiedUser.role) && verifiedUser.role !== 'admin') {
             throw new ApiError(403, "You are not Authorised !!")
         }
         next();

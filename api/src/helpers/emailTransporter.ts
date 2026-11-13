@@ -1,4 +1,5 @@
 import fs from 'fs';
+import path from 'path';
 import handlebars from 'handlebars';
 import ApiError from '../errors/apiError';
 import httpStatus from 'http-status';
@@ -31,10 +32,28 @@ export const EmailtTransporter = async({pathName,replacementObj, toMail, subject
     }
 };
 
-const readHtmlFile = async(path:string): Promise<string> =>{
+const readHtmlFile = async(filePath:string): Promise<string> =>{
     try {
-        const html = await fs.promises.readFile(path, {encoding: 'utf-8'});
-        return html
+        if (fs.existsSync(filePath)) {
+            return await fs.promises.readFile(filePath, {encoding: 'utf-8'});
+        }
+        const fileName = path.basename(filePath);
+        const candidates = [
+            path.join(process.cwd(), 'template', fileName),
+            path.join(process.cwd(), 'dist', 'template', fileName),
+            path.join(process.cwd(), 'api', 'template', fileName),
+            path.join(process.cwd(), 'api', 'dist', 'template', fileName),
+            path.join(__dirname, '../../../../template', fileName),
+            path.join(__dirname, '../../../../dist/template', fileName),
+            path.join(__dirname, '../../template', fileName),
+            path.join(__dirname, '../template', fileName),
+        ];
+        for (const candidate of candidates) {
+            if (fs.existsSync(candidate)) {
+                return await fs.promises.readFile(candidate, {encoding: 'utf-8'});
+            }
+        }
+        return await fs.promises.readFile(filePath, {encoding: 'utf-8'});
     } catch (error) {
         console.log("Error Reading html file", error);
         throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "Unable to read HTML file")

